@@ -1,2 +1,2 @@
 # cantocards
-Automate lookup of Mandarin/English words in Taishanese/Cantonese
+Automatic lookup of Mandarin/English words in Taishanese/Cantonese
