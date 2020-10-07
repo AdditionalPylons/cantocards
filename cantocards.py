@@ -3,9 +3,21 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.select import Select
 from pathlib import Path
 from typing import List
+import csv
+# import re
+
+
+def main():
+    scraper = TaishaneseScraper()
+    scraper.scrape_hsk(1)
+    scraper.export_entries()
 
 
 class TaishaneseScraper():
+
+    scraped_results = {}
+    failed_count = 0
+    failed_entries = []
 
     def search_and_scrape(self, words: List, language="Mandarin"):
         self.words = words
@@ -19,10 +31,7 @@ class TaishaneseScraper():
             "English": 4,
         }
 
-        with webdriver.Chrome(Path.cwd().joinpath("chromedriver")) as driver, \
-             open(Path.cwd().joinpath("scraped_results.txt"), "a+") as export_file:
-            failed_count = 0
-            failed_entries = []
+        with webdriver.Chrome(Path.cwd().joinpath("chromedriver")) as driver:
             for word in self.words:
                 driver.get("https://www.stephen-li.com/"
                            "TaishaneseVocabulary/Taishanese.html")
@@ -44,14 +53,17 @@ class TaishaneseScraper():
                         "/html/body").text.splitlines()
                     entry = results[2]
                     print(f"Searched for {word}, found {entry}")
-                    print(f"Audio file available at: {soundclip}")
-                    export_file.write(f"{word} : {entry}\n")
+                    # print(f"Audio file available at: {soundclip}")
+                    self.scraped_results[f"{word}"] = (f"{entry}",
+                                                       f"{soundclip}")
+
                 except Exception:
                     print(f"No entry found for {word}!")
-                    failed_count += 1
-                    failed_entries.append(word)
-            export_file.write(f"There were {failed_count} words missing "
-                              "a definition, and they were: {failed_entries}")
+                    self.failed_count += 1
+                    self.failed_entries.append(word)
+
+            print(f"There were {self.failed_count} words missing a definition,"
+                  f"and they were:\n{self.failed_entries}")
 
     def import_vocab_list(self, file):
         self.file = file
@@ -78,6 +90,27 @@ class TaishaneseScraper():
         else:
             self.search_and_scrape(self.import_vocab_list(levels[hsk_level]))
 
+    def export_entries(self, filename="scraped_results", extension="txt"):
+        self.filename = filename
+        self.extension = extension
+
+        with open(Path.cwd().joinpath(f"{filename}.{extension}"),
+             "a+") as file:
+            def write_entry(word, definition):
+                if extension == "txt":
+                    file.write(f"{word} : {definition}\n")
+                elif extension == "csv":
+                    writer = csv.writer(file, delimiter=',', quotechar='"',
+                                        quoting=csv.QUOTE_MINIMAL)
+                    writer.writerow([f"{word}", f"{definition}"])
+
+            for key, value in self.scraped_results.items():
+                write_entry(key, value[0])
+
+    def print_results(self):
+        for key, value in self.scraped_results.items():
+            print(f"TERM: {key} DEF: {value[0]} CLIP: {value[1]}")
+
 
 class FlashCard():
     def __init__(self, term, definition, soundclip=None):
@@ -103,5 +136,7 @@ class FlashCard():
             print("Wrong.")
 
 
-scraper = TaishaneseScraper()
-scraper.scrape_hsk(1)
+if __name__ == '__main__':
+    main()
+# print(scraper.import_vocab_list("scraped_results.txt"))
+# print(scraper.export_csv())
