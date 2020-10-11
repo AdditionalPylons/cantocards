@@ -3,8 +3,8 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.select import Select
 from pathlib import Path
 from typing import List
+
 import csv
-# import re
 
 
 def main():
@@ -32,38 +32,57 @@ class TaishaneseScraper():
         }
 
         with webdriver.Chrome(Path.cwd().joinpath("chromedriver")) as driver:
-            for word in self.words:
-                driver.get("https://www.stephen-li.com/"
-                           "TaishaneseVocabulary/Taishanese.html")
-                assert "Taishanese" in driver.title
+
+            def search():
+                site = (
+                    "https://www.stephen-li.com/"
+                    "TaishaneseVocabulary/Taishanese.html"
+                )
+                title_keyword = "Taishanese"
+                
+                # Open and verify site
+                driver.get(site)
+                assert title_keyword in driver.title
+
+                # Select language for search
                 driver.switch_to.frame("menu")
-                button = Select(driver.find_element_by_name("Select1"))
-                button.select_by_index((language_codes[self.language]))
-                elem = driver.find_element_by_name("data")
-                elem.clear()
-                elem.send_keys(word)
-                elem.send_keys(Keys.RETURN)
+                language_selector = Select(driver.find_element_by_name("Select1"))
+                language_selector.select_by_index((language_codes[self.language]))
+
+                # Input and search for term
+                search_box = driver.find_element_by_name("data")
+                search_box.clear()
+                search_box.send_keys(word)
+                search_box.send_keys(Keys.RETURN)
+
+                # Switch to frame containing search results
                 driver.switch_to.default_content()
                 driver.switch_to.frame("content")
 
-                try:
-                    soundclip = driver.find_element_by_xpath(
-                        "//a[@target='sound']").get_attribute("href")
-                    results = driver.find_element_by_xpath(
-                        "/html/body").text.splitlines()
-                    entry = results[2]
-                    print(f"Searched for {word}, found {entry}")
-                    # print(f"Audio file available at: {soundclip}")
-                    self.scraped_results[f"{word}"] = (f"{entry}",
-                                                       f"{soundclip}")
+            def scrape():
+                soundclip_url = driver.find_element_by_xpath(
+                    "//a[@target='sound']").get_attribute("href")
+                results = driver.find_element_by_xpath(
+                    "/html/body").text.splitlines()
+                entry = results[2]
 
+                print(f"Searched for {word}, found {entry}")
+
+                self.scraped_results[f"{word}"] = (f"{entry}",
+                                                    f"{soundclip_url}")
+
+            for word in self.words:
+                search()
+
+                try:
+                    scrape()
                 except Exception:
                     print(f"No entry found for {word}!")
                     self.failed_count += 1
                     self.failed_entries.append(word)
 
-            print(f"There were {self.failed_count} words missing a definition,"
-                  f"and they were:\n{self.failed_entries}")
+        print(f"There were {self.failed_count} words missing a definition,"
+                f"and they were:\n{self.failed_entries}")
 
     def import_vocab_list(self, file):
         self.file = file
@@ -138,5 +157,3 @@ class FlashCard():
 
 if __name__ == '__main__':
     main()
-# print(scraper.import_vocab_list("scraped_results.txt"))
-# print(scraper.export_csv())
