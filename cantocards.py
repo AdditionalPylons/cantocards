@@ -134,15 +134,6 @@ class TaishaneseScraper():
                 filepath = audio_dir.joinpath(f"{word}.mp3")
                 if not filepath.exists():
                     urlretrieve(url, filepath)
-                '''soundclip = urlretrieve(url, f"{word}.mp3")
-                filepath = audio_dir.joinpath(f"{word}.mp3")
-                print(url)
-                print(soundclip)
-                print(filepath)
-                if not filepath.exists():
-                    with open(filepath, "a+") as file:
-
-                        file.write(soundclip)'''
 
     def print_results(self):
         for key, value in self.scraped_results.items():
