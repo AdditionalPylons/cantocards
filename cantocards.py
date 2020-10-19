@@ -2,6 +2,7 @@ from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.select import Select
 from pathlib import Path
+from urllib.request import urlretrieve
 from typing import List
 
 import csv
@@ -9,19 +10,19 @@ import csv
 
 def main():
     scraper = TaishaneseScraper()
-    scraper.scrape_hsk(1)
-    scraper.export_entries()
-
+    scraper.scrape_hsk('all')
+    scraper.export_entries(extension='txt')
+    scraper.export_entries(extension='csv')
+    scraper.export_audio()
 
 class TaishaneseScraper():
-
-    scraped_results = {}
-    failed_count = 0
-    failed_entries = []
+    
+    def __init__(self):
+        self.scraped_results = {}
+        self.failed_count = 0
+        self.failed_entries = []
 
     def search_and_scrape(self, words: List, language="Mandarin"):
-        self.words = words
-        self.language = language
 
         language_codes = {
             "Taishanese": 0,
@@ -47,7 +48,7 @@ class TaishaneseScraper():
                 # Select language for search
                 driver.switch_to.frame("menu")
                 language_selector = Select(driver.find_element_by_name("Select1"))
-                language_selector.select_by_index((language_codes[self.language]))
+                language_selector.select_by_index((language_codes[language]))
 
                 # Input and search for term
                 search_box = driver.find_element_by_name("data")
@@ -71,7 +72,7 @@ class TaishaneseScraper():
                 self.scraped_results[f"{word}"] = (f"{entry}",
                                                     f"{soundclip_url}")
 
-            for word in self.words:
+            for word in words:
                 search()
 
                 try:
@@ -85,14 +86,12 @@ class TaishaneseScraper():
                 f"and they were:\n{self.failed_entries}")
 
     def import_vocab_list(self, file):
-        self.file = file
 
         with open(Path.cwd().joinpath(file), "r") as source:
             results = [line.strip() for line in source]
             return results
 
     def scrape_hsk(self, hsk_level):
-        self.hsk_level = hsk_level
 
         levels = {
             1: "HSK1.txt",
@@ -103,18 +102,17 @@ class TaishaneseScraper():
             6: "HSK6.txt",
             }
 
-        if self.hsk_level == 0 or self.hsk_level == "all":
+        if hsk_level == 0 or hsk_level == "all":
             for level in levels.values():
                 self.search_and_scrape(self.import_vocab_list(level))
         else:
             self.search_and_scrape(self.import_vocab_list(levels[hsk_level]))
 
     def export_entries(self, filename="scraped_results", extension="txt"):
-        self.filename = filename
-        self.extension = extension
 
         with open(Path.cwd().joinpath(f"{filename}.{extension}"),
              "a+") as file:
+
             def write_entry(word, definition):
                 if extension == "txt":
                     file.write(f"{word} : {definition}\n")
@@ -125,6 +123,26 @@ class TaishaneseScraper():
 
             for key, value in self.scraped_results.items():
                 write_entry(key, value[0])
+
+    def export_audio(self, folder_name="audio"):
+        audio_dir = Path.cwd().joinpath(folder_name)
+        if not audio_dir.exists():
+            audio_dir.mkdir()
+
+        for word, results in self.scraped_results.items():
+                url = results[1]
+                filepath = audio_dir.joinpath(f"{word}.mp3")
+                if not filepath.exists():
+                    urlretrieve(url, filepath)
+                '''soundclip = urlretrieve(url, f"{word}.mp3")
+                filepath = audio_dir.joinpath(f"{word}.mp3")
+                print(url)
+                print(soundclip)
+                print(filepath)
+                if not filepath.exists():
+                    with open(filepath, "a+") as file:
+
+                        file.write(soundclip)'''
 
     def print_results(self):
         for key, value in self.scraped_results.items():

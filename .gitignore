@@ -127,3 +127,11 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# VS Code
+.vscode/
+
+# Project-specific files
+/audio
+scraped_results.txt
+scraped_results.csv
