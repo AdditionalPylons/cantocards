@@ -8,13 +8,6 @@ from typing import List
 import csv
 
 
-def main():
-    scraper = TaishaneseScraper()
-    scraper.scrape_hsk('all')
-    scraper.export_entries(extension='txt')
-    scraper.export_entries(extension='csv')
-    scraper.export_audio()
-
 class TaishaneseScraper():
     
     def __init__(self):
@@ -140,28 +133,12 @@ class TaishaneseScraper():
             print(f"TERM: {key} DEF: {value[0]} CLIP: {value[1]}")
 
 
-class FlashCard():
-    def __init__(self, term, definition, soundclip=None):
-        self.term = term
-        self.definition = definition
-        self.soundclip = soundclip
-
-    def __str__(self):
-        return f"Term = {self.term}\nDefinition = {self.definition}"
-
-    def test_term(self):
-        answer = input(f"What is the meaning of {self.term}? ")
-        if answer.casefold() == self.definition.casefold():
-            print("Correct!")
-        else:
-            print("Wrong.")
-
-    def test_definition(self):
-        answer = input(f"How do you say {self.definition}? ")
-        if answer.casefold() == self.term.casefold():
-            print("Correct!")
-        else:
-            print("Wrong.")
+def main():
+    scraper = TaishaneseScraper()
+    scraper.scrape_hsk('all')
+    scraper.export_entries(extension='txt')
+    scraper.export_entries(extension='csv')
+    scraper.export_audio()
 
 
 if __name__ == '__main__':
